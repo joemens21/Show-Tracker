@@ -145,16 +145,10 @@ def check_movie_status(movie):
             "title": details["title"],
             "release_date": release_date_str
         }
-    elif days_until <= 30:
-        return {
-            "status": "soon",
-            "title": details["title"],
-            "release_date": release_date_str,
-            "days_until": days_until
-        }
     else:
+        # All future movies now categorized as "upcoming" regardless of days
         return {
-            "status": "future",
+            "status": "upcoming",
             "title": details["title"],
             "release_date": release_date_str,
             "days_until": days_until
@@ -172,50 +166,46 @@ def send_combined_email(tv_data, movie_data):
     
     released_movies = movie_data.get("released", [])
     today_movies = movie_data.get("today", [])
-    soon_movies = movie_data.get("soon", [])
+    upcoming_movies = movie_data.get("upcoming", [])
 
     try:
-        subject = "📺🎬 Episode & Movie Tracker Update"
-        body = "Your Entertainment Update:\n\n"
+        subject = "Episode Tracker Update"
+        body = "Episode Update:\n\n"
         
         # TV Shows section
         if new_episodes:
-            body += "=" * 50 + "\n"
-            body += "📺 NEW TV EPISODES:\n"
-            body += "=" * 50 + "\n\n"
+            body += "🔥 NEW EPISODES:\n\n"
             for show_name, episodes in new_episodes.items():
                 body += f"{show_name}:\n"
                 for ep in episodes:
-                    body += f"  • S{ep['season']:02}E{ep['number']:02} - {ep['name']} (aired {ep['airdate']})\n"
+                    body += f"  • S{ep['season']:02}E{ep['number']:02} (aired {ep['airdate']}) — {ep['name']}\n"
                 body += "\n"
         
         if no_new_episodes:
-            body += "✅ No new episodes: " + ", ".join(no_new_episodes) + "\n\n"
+            body += "✅ NO NEW EPISODES:\n\n"
+            for show_name in no_new_episodes:
+                body += f"  • {show_name}\n"
+            body += "\n"
         
         # Movies section
-        if today_movies or soon_movies or released_movies:
-            body += "=" * 50 + "\n"
-            body += "🎬 MOVIE UPDATES:\n"
-            body += "=" * 50 + "\n\n"
-            
-            if today_movies:
-                body += "🎉 RELEASING TODAY:\n"
-                for movie in today_movies:
-                    body += f"  • {movie['title']}\n"
-                body += "\n"
-            
-            if soon_movies:
-                body += "🔥 COMING SOON (within 30 days):\n"
-                for movie in sorted(soon_movies, key=lambda x: x['days_until']):
-                    body += f"  • {movie['title']} - {movie['release_date']} ({movie['days_until']} days)\n"
-                body += "\n"
-            
-            if released_movies:
-                body += "✅ RECENTLY RELEASED:\n"
-                for movie in released_movies:
-                    if movie['days_ago'] <= 7:  # Only show releases within last week
-                        body += f"  • {movie['title']} - {movie['release_date']} ({movie['days_ago']} days ago)\n"
-                body += "\n"
+        if today_movies:
+            body += "🎉 RELEASING TODAY:\n\n"
+            for movie in today_movies:
+                body += f"  • {movie['title']}\n"
+            body += "\n"
+        
+        if upcoming_movies:
+            body += "🔥 UPCOMING RELEASES:\n\n"
+            for movie in sorted(upcoming_movies, key=lambda x: x['days_until']):
+                body += f"  • {movie['title']} - {movie['release_date']} ({movie['days_until']} days)\n"
+            body += "\n"
+        
+        if released_movies:
+            body += "✅ RECENTLY RELEASED:\n\n"
+            for movie in released_movies:
+                if movie['days_ago'] <= 7:  # Only show releases within last week
+                    body += f"  • {movie['title']} - {movie['release_date']} ({movie['days_ago']} days ago)\n"
+            body += "\n"
 
         msg = MIMEMultipart()
         msg["From"] = EMAIL_CONFIG["sender_email"]
@@ -262,8 +252,7 @@ def check_all_and_email():
     movies = load_movies()
     movie_released = []
     movie_today = []
-    movie_soon = []
-    movie_future = []
+    movie_upcoming = []
     
     if movies:
         print("🎬 Checking Movies:")
@@ -277,11 +266,9 @@ def check_all_and_email():
                 elif status["status"] == "today":
                     print(f"  🎉 {status['title']}: RELEASING TODAY!")
                     movie_today.append(status)
-                elif status["status"] == "soon":
+                elif status["status"] == "upcoming":
                     print(f"  🔥 {status['title']}: {status['days_until']} days away")
-                    movie_soon.append(status)
-                else:
-                    movie_future.append(status)
+                    movie_upcoming.append(status)
             except Exception as e:
                 print(f"  ⚠️ Error checking {movie['title']}: {e}")
         print()
@@ -294,8 +281,7 @@ def check_all_and_email():
     movie_data = {
         "released": movie_released,
         "today": movie_today,
-        "soon": movie_soon,
-        "future": movie_future
+        "upcoming": movie_upcoming
     }
     
     send_combined_email(tv_data, movie_data)
