@@ -12,9 +12,9 @@ TVMAZE_EPISODES_URL = "https://api.tvmaze.com/shows/{}/episodes"
 
 # ---------------- Email Configuration ----------------
 EMAIL_CONFIG = {
-    "sender_email": "silvergrenade99@gmail.com",  # Your Gmail
-    "sender_password": "urxdgifdglicqzrj",       # 16-character App Password
-    "recipient_email": "mensj21@gmail.com",      # Where to send alerts
+      "sender_email": os.environ.get("EMAIL_SENDER"),
+    "sender_password": os.environ.get("EMAIL_PASSWORD"),
+    "recipient_email": os.environ.get("EMAIL_RECEIVER"),
     "smtp_server": "smtp.gmail.com",
     "smtp_port": 587
 }
