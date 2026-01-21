@@ -10,6 +10,7 @@ import os
 # ============== Configuration ==============
 SHOWS_FILE = "shows.json"
 MOVIES_FILE = "movies.json"
+CONFIG_FILE = "config.json"
 
 # TV Shows API (TVMaze)
 TVMAZE_SEARCH_URL = "https://api.tvmaze.com/singlesearch/shows"
@@ -20,14 +21,36 @@ TMDB_API_KEY = "a913dafaf4d76f18dafd87b1847c5f8f"
 TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
 TMDB_MOVIE_URL = "https://api.themoviedb.org/3/movie/{}"
 
-# Email Configuration
-EMAIL_CONFIG = {
-    "sender_email": os.environ.get("EMAIL_SENDER"),
-    "sender_password": os.environ.get("EMAIL_PASSWORD"),
-    "recipient_email": os.environ.get("EMAIL_RECEIVER"),
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587
-}
+# Load Email Configuration
+def load_email_config():
+    """Load email configuration from environment variables or config.json file."""
+    config = {}
+    
+    # First, try to load from environment variables (for GitHub Actions)
+    env_sender = os.environ.get("EMAIL_SENDER")
+    env_password = os.environ.get("EMAIL_PASSWORD")
+    env_receiver = os.environ.get("EMAIL_RECEIVER")
+    
+    if env_sender or env_password or env_receiver:
+        config = {
+            "sender_email": env_sender,
+            "sender_password": env_password,
+            "recipient_email": env_receiver,
+            "smtp_server": "smtp.gmail.com",
+            "smtp_port": 587
+        }
+    # Fall back to config.json file (for local development)
+    elif os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                file_config = json.load(f)
+                config = file_config.get("email", {})
+        except Exception as e:
+            print(f"⚠️ Error loading config file: {e}")
+    
+    return config
+
+EMAIL_CONFIG = load_email_config()
 
 # ============== TV Show Functions ==============
 def load_shows():
@@ -150,11 +173,6 @@ def send_combined_email(tv_data, movie_data):
     released_movies = movie_data.get("released", [])
     today_movies = movie_data.get("today", [])
     soon_movies = movie_data.get("soon", [])
-
-    # Only send email if there's something notable
-    if not new_episodes and not today_movies and not soon_movies:
-        print("ℹ️ No new episodes or upcoming movies to report.\n")
-        return
 
     try:
         subject = "📺🎬 Episode & Movie Tracker Update"
