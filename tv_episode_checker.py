@@ -74,8 +74,8 @@ def send_email_alert(new_episodes_dict, no_new_episodes_list=None):
 
     try:
         # Build email content
-        subject = "📺 Episode Tracker Update"
-        body = "TV Episode Tracker Status:\n\n"
+        subject = "Episode Tracker Update"
+        body = "Episode Update:\n\n"
         
         if new_episodes_dict:
             body += "🔥 NEW EPISODES:\n\n"
