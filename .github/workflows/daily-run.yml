@@ -1,0 +1,29 @@
+name: Daily TV Episode Check
+
+on:
+  schedule:
+    - cron: '0 12 * * *'  # everyday at 12:00 UTC
+  workflow_dispatch:       # allows manual trigger
+
+jobs:
+  check-tv:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run TV Episode Checker
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: python tv_episode_checker.py --auto
